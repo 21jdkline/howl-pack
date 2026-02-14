@@ -246,7 +246,7 @@ export function AppProvider({ children }) {
     });
 
     syncToSheet(sheet, row, 3000);
-  }, [profileId, dateKey, todayCompletions, todayStats.completedItems, todayStats.percentComplete, todayStats.xpEarned, streak, hydration, kneeNote]);
+  }, [profileId, dateKey, todayCompletions, todayStats.completedItems, todayStats.percentComplete, todayStats.xpEarned, streak]);
 
   // ============ HYDRATION (Xander) ============
   const [hydration, setHydration] = useState(() =>
@@ -289,6 +289,20 @@ export function AppProvider({ children }) {
       }, 3000);
     }
   }, [kneeNote, dateKey, profileId]);
+
+  // Hydration/knee changes also trigger a daily row sync
+  useEffect(() => {
+    if (!profileId || todayStats.completedItems === 0) return;
+    const sheet = profileId === 'xander' ? 'Xander_Daily' : 'Maddox_Daily';
+    const calData = getFromStorage('howl_xander_today_cals', { cal: 0 });
+    const row = buildDailyRow(profileId, dateKey, todayCompletions, {
+      pain: kneeNote.pain, swelling: kneeNote.swelling, rom: kneeNote.rom,
+      hydration: hydration * 10, calHit: calData.cal >= 3100,
+      pct: todayStats.percentComplete, xp: todayStats.xpEarned, streak,
+      co2Done: getFromStorage(`howl_maddox_co2_${dateKey}`, false),
+    });
+    syncToSheet(sheet, row, 3000);
+  }, [hydration, kneeNote]);
 
   // ============ CONTEXT VALUE ============
   const value = {
