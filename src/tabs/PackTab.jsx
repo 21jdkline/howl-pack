@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useApp } from '../contexts/AppContext';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useApp, getFromStorage, saveToStorage } from '../contexts/AppContext';
 import { fetchPackData, postTrashTalk, TRASH_TALK } from '../services/packFeed';
+import { useToast, TOAST_TYPES } from '../components/ToastNotifications';
 import { Trophy, MessageCircle, Send } from 'lucide-react';
 
 export default function PackTab() {
   const { profile } = useApp();
+  const { addToast } = useToast();
   const [dailyData, setDailyData] = useState([]);
   const [chatData, setChatData] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const lastChatCount = useRef(getFromStorage('howl_last_chat_count', 0));
 
   const accent = profile?.accentColor || '#6366f1';
 
@@ -19,9 +22,26 @@ export default function PackTab() {
       fetchPackData('PackChat'),
     ]);
     setDailyData(Array.isArray(daily) ? daily : []);
-    setChatData(Array.isArray(chat) ? chat : []);
+    const chatArr = Array.isArray(chat) ? chat : [];
+    setChatData(chatArr);
+
+    // Fire toasts for new trash talk from others
+    if (chatArr.length > lastChatCount.current && lastChatCount.current > 0) {
+      const newMessages = chatArr.slice(lastChatCount.current);
+      newMessages.forEach(msg => {
+        if (msg.appId !== profile?.appId && msg.message) {
+          addToast(TOAST_TYPES.trashTalk(
+            { nickname: msg.nickname, name: msg.name, emoji: msg.emoji },
+            msg.message
+          ));
+        }
+      });
+    }
+    lastChatCount.current = chatArr.length;
+    saveToStorage('howl_last_chat_count', chatArr.length);
+
     setLoading(false);
-  }, []);
+  }, [profile, addToast]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Save, Trash2, Download, ExternalLink, Link, Users, Mail, Lock, ArrowLeftRight } from 'lucide-react';
-import { useApp } from '../contexts/AppContext';
+import { Save, Trash2, Download, ExternalLink, Link, Users, Mail, Lock, ArrowLeftRight, Bell } from 'lucide-react';
+import { useApp, getFromStorage, saveToStorage } from '../contexts/AppContext';
 import { NSDR_VIDEOS } from '../data/levels';
 import { setPackSheetUrl, getPackSheetUrl } from '../services/packFeed';
 
@@ -12,12 +12,18 @@ export default function SetupTab() {
   const [unlocked, setUnlocked] = useState(false);
   const storedPin = localStorage.getItem('howl_setup_pin') || '1234';
 
-  // Settings state
   const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('howl_googleScriptUrl') || '');
   const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('howl_googleSheetUrl') || '');
   const [packUrl, setPackUrl] = useState(getPackSheetUrl());
   const [emailTo, setEmailTo] = useState(localStorage.getItem('howl_report_email') || '');
   const [saved, setSaved] = useState(false);
+
+  // Notification toggle states
+  const [notifyBadges, setNotifyBadges] = useState(() => getFromStorage('howl_notify_badges', true));
+  const [notifyTrashTalk, setNotifyTrashTalk] = useState(() => getFromStorage('howl_notify_trash', true));
+  const [notifyStreak, setNotifyStreak] = useState(() => getFromStorage('howl_notify_streak', true));
+  const [notifyRankUp, setNotifyRankUp] = useState(() => getFromStorage('howl_notify_rankup', true));
+  const [notifyPerfect, setNotifyPerfect] = useState(() => getFromStorage('howl_notify_perfect', true));
 
   if (!unlocked) {
     return (
@@ -27,22 +33,16 @@ export default function SetupTab() {
           <h2 className="text-sm font-bold text-gray-400 mb-4">Enter PIN to access settings</h2>
         </div>
         <div className="flex gap-2 max-w-[200px] mx-auto">
-          <input
-            type="password"
-            maxLength={4}
-            value={pin}
+          <input type="password" maxLength={4} value={pin}
             onChange={(e) => setPin(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && pin === storedPin) setUnlocked(true); }}
             placeholder="PIN"
             className="flex-1 bg-surface border border-white/10 rounded-lg px-3 py-3 text-center text-lg text-white outline-none tracking-[0.5em]"
-            autoFocus
-          />
+            autoFocus />
         </div>
-        <button
-          onClick={() => { if (pin === storedPin) setUnlocked(true); }}
+        <button onClick={() => { if (pin === storedPin) setUnlocked(true); }}
           className="block mx-auto px-6 py-2 rounded-lg text-xs font-bold"
-          style={{ background: accent, color: '#fff' }}
-        >
+          style={{ background: accent, color: '#fff' }}>
           Unlock
         </button>
         <p className="text-[10px] text-gray-600 text-center">Default PIN: 1234</p>
@@ -55,6 +55,11 @@ export default function SetupTab() {
     localStorage.setItem('howl_googleSheetUrl', sheetUrl);
     setPackSheetUrl(packUrl);
     localStorage.setItem('howl_report_email', emailTo);
+    saveToStorage('howl_notify_badges', notifyBadges);
+    saveToStorage('howl_notify_trash', notifyTrashTalk);
+    saveToStorage('howl_notify_streak', notifyStreak);
+    saveToStorage('howl_notify_rankup', notifyRankUp);
+    saveToStorage('howl_notify_perfect', notifyPerfect);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -63,9 +68,7 @@ export default function SetupTab() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key.startsWith('howl_')) {
-        data[key] = JSON.parse(localStorage.getItem(key) || 'null');
-      }
+      if (key.startsWith('howl_')) data[key] = JSON.parse(localStorage.getItem(key) || 'null');
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -88,19 +91,43 @@ export default function SetupTab() {
     }
   };
 
+  const Toggle = ({ value, onChange, label }) => (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-xs text-gray-300">{label}</span>
+      <button onClick={() => onChange(!value)}
+        className="w-10 h-5 rounded-full transition-all relative"
+        style={{ background: value ? accent : '#333' }}>
+        <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
+          style={{ left: value ? '22px' : '2px' }} />
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-white">Setup</h2>
 
       {/* Switch Profile */}
-      <button
-        onClick={switchProfile}
-        className="w-full rounded-xl p-3 bg-white/[0.03] border border-white/5 flex items-center gap-3 active:bg-white/[0.06]"
-      >
+      <button onClick={switchProfile}
+        className="w-full rounded-xl p-3 bg-white/[0.03] border border-white/5 flex items-center gap-3 active:bg-white/[0.06]">
         <ArrowLeftRight size={16} className="text-gray-400" />
         <span className="text-sm text-gray-300">Switch Profile</span>
         <span className="ml-auto text-xs text-gray-500">Currently: {profile?.name}</span>
       </button>
+
+      {/* Notifications */}
+      <div className="rounded-xl p-3 bg-white/[0.03] border border-white/5 space-y-1">
+        <div className="flex items-center gap-2 mb-2">
+          <Bell size={14} style={{ color: accent }} />
+          <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notifications</h3>
+        </div>
+        <Toggle value={notifyBadges} onChange={setNotifyBadges} label="🏅 Badge earned" />
+        <Toggle value={notifyRankUp} onChange={setNotifyRankUp} label="⬆️ Rank up" />
+        <Toggle value={notifyStreak} onChange={setNotifyStreak} label="🔥 Streak milestones" />
+        <Toggle value={notifyPerfect} onChange={setNotifyPerfect} label="⭐ Perfect day (100%)" />
+        <Toggle value={notifyTrashTalk} onChange={setNotifyTrashTalk} label="💬 Trash talk received" />
+        <p className="text-[9px] text-gray-600 mt-1">Banners appear at the top of the app when triggered.</p>
+      </div>
 
       {/* Quick Links */}
       <div className="rounded-xl p-3 bg-white/[0.03] border border-white/5 space-y-1.5">
@@ -146,7 +173,7 @@ export default function SetupTab() {
         <p className="text-[9px] text-gray-500">Shared Google Sheet URL — same in all family apps.</p>
         <input type="url" value={packUrl} onChange={e => setPackUrl(e.target.value)}
           placeholder="https://script.google.com/macros/s/..."
-          className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:ring-1 focus:ring-green-400" />
+          className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none" />
       </div>
 
       {/* Weekly Report Email */}
@@ -167,12 +194,9 @@ export default function SetupTab() {
       {/* Save */}
       <button onClick={saveSettings}
         className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
-          saved
-            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-            : 'border border-white/10 text-white hover:bg-white/5'
+          saved ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'border border-white/10 text-white'
         }`}
-        style={!saved ? { background: `${accent}22`, borderColor: `${accent}44`, color: accent } : undefined}
-      >
+        style={!saved ? { background: `${accent}22`, borderColor: `${accent}44`, color: accent } : undefined}>
         <Save size={14} />
         {saved ? 'Saved ✓' : 'Save Settings'}
       </button>
@@ -190,19 +214,9 @@ export default function SetupTab() {
         </button>
       </div>
 
-      {/* Setup Guide */}
-      <div className="rounded-xl p-3 bg-white/[0.03] border border-white/5">
-        <h3 className="text-[10px] font-semibold text-gray-400 mb-2">Setup Guide</h3>
-        <div className="text-[10px] text-gray-500 space-y-1.5">
-          <p><strong className="text-gray-400">1.</strong> Create a Google Sheet for family data. Extensions → Apps Script. Paste the script. Run initializeSheets(). Deploy as Web App.</p>
-          <p><strong className="text-gray-400">2.</strong> Create a SEPARATE shared sheet for Pack Feed competition. Deploy its script. Put that URL in Pack Feed section — same URL in Demon Slayer too.</p>
-          <p><strong className="text-gray-400">3.</strong> Open Safari → go to Vercel URL → Share → Add to Home Screen.</p>
-        </div>
-      </div>
-
       {/* Version */}
       <div className="text-center py-2">
-        <p className="text-[9px] text-gray-700">HOWL Pack v1.0.0</p>
+        <p className="text-[9px] text-gray-700">HOWL Pack v1.1.0</p>
         <p className="text-[9px] text-gray-700">Powered by HOWL 🐺</p>
       </div>
     </div>

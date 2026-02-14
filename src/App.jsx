@@ -1,6 +1,7 @@
 import { useApp } from './contexts/AppContext';
 import SplashScreen from './components/SplashScreen';
 import ProfileSelector from './components/ProfileSelector';
+import useNotifications from './hooks/useNotifications';
 import TodayTab from './tabs/TodayTab';
 import FuelTab from './tabs/FuelTab';
 import TrainTab from './tabs/TrainTab';
@@ -36,8 +37,9 @@ function Header() {
         {/* Title Row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <button onClick={switchProfile} className="text-2xl active:scale-90 transition-transform">
-              {profile.icon}
+            <button onClick={switchProfile} className="w-9 h-9 rounded-lg overflow-hidden active:scale-90 transition-transform flex-shrink-0">
+              <img src={profileId === 'xander' ? '/x-factor-64.png' : '/beast-mode-64.png'}
+                alt={profile.name} className="w-full h-full object-cover" />
             </button>
             <div>
               <h1 className="text-sm font-black tracking-wider" style={{ color: accent }}>
@@ -154,10 +156,13 @@ function PoweredByHowl() {
 }
 
 export default function App() {
-  const { activeTab, profile, profileId, showSplash } = useApp();
+  const { activeTab, profile, profileId, showSplash, dismissSplash } = useApp();
 
-  // Splash screen
-  if (showSplash) return <SplashScreen />;
+  // Fire toast notifications for badges, rank ups, streaks, etc.
+  useNotifications();
+
+  // Splash screen (once daily with video)
+  if (showSplash) return <SplashScreen onComplete={dismissSplash} />;
 
   // Profile selection
   if (!profileId || !profile) return <ProfileSelector />;

@@ -1,6 +1,11 @@
 import { PROFILES } from '../data/profiles';
 import { useApp } from '../contexts/AppContext';
 
+const PROFILE_IMAGES = {
+  xander: '/x-factor-192.png',
+  maddox: '/beast-mode-192.png',
+};
+
 export default function ProfileSelector() {
   const { selectProfile } = useApp();
 
@@ -26,11 +31,10 @@ export default function ProfileSelector() {
             }}
           >
             <div className="flex items-center gap-4">
-              <div
-                className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
-                style={{ background: `${p.accentColor}22` }}
-              >
-                {p.icon}
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0"
+                style={{ background: `${p.accentColor}22` }}>
+                <img src={PROFILE_IMAGES[p.id]} alt={p.name}
+                  className="w-full h-full object-cover" />
               </div>
               <div className="text-left">
                 <div className="text-lg font-black tracking-wider" style={{ color: p.accentColor }}>

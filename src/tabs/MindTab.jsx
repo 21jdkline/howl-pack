@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp, getFromStorage, saveToStorage } from '../contexts/AppContext';
+import { useToast, TOAST_TYPES } from '../components/ToastNotifications';
 import { NSDR_VIDEOS, SLEEP_CHECKLIST, LKM_STEPS, BREATHING_SCHEDULE, YOUTUBE_LINKS } from '../data/levels';
 import { ExternalLink, Play, Square, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -17,7 +18,8 @@ const RECOVERY_MILESTONES = [
 ];
 
 export default function MindTab() {
-  const { profile, profileId, monthsSinceSurgery } = useApp();
+  const { profile, profileId, monthsSinceSurgery, dateKey } = useApp();
+  const { addToast } = useToast();
   const accent = profile?.accentColor || '#e63946';
   const [section, setSection] = useState('breathing');
   const [breathType, setBreathType] = useState('box');
@@ -282,6 +284,7 @@ export default function MindTab() {
                 saveToStorage(`howl_maddox_co2_holds_${dateKey}`, newHolds);
                 if (newHolds.length >= 4) {
                   saveToStorage(`howl_maddox_co2_${dateKey}`, true);
+                  addToast(TOAST_TYPES.co2Complete());
                 }
                 setCo2Timer(0);
               }}

@@ -29,12 +29,16 @@ const SURGERY_DATE = new Date('2025-11-03');
 export function AppProvider({ children }) {
   // ============ PROFILE SELECTION ============
   const [profileId, setProfileId] = useState(() => getFromStorage('howl_profile', null));
-  const [showSplash, setShowSplash] = useState(true);
 
-  // Splash screen timer
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800);
-    return () => clearTimeout(timer);
+  // Splash: show once per day
+  const [showSplash, setShowSplash] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastSeen = localStorage.getItem('howl_splash_seen');
+    return lastSeen !== today;
+  });
+
+  const dismissSplash = useCallback(() => {
+    setShowSplash(false);
   }, []);
 
   const profile = profileId ? PROFILES[profileId] : null;
@@ -307,7 +311,7 @@ export function AppProvider({ children }) {
   // ============ CONTEXT VALUE ============
   const value = {
     // Profile
-    profileId, profile, selectProfile, switchProfile, showSplash,
+    profileId, profile, selectProfile, switchProfile, showSplash, dismissSplash,
     // Navigation
     activeTab, setActiveTab,
     // Date
